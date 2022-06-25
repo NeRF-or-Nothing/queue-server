@@ -3,8 +3,8 @@
 import pickle
 import random
 import time
-import uuid
 import pika
+import os
 
 from typing import TYPE_CHECKING, List
 from typing_extensions import Self
@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 COLMAP_QUEUE = "colmap_queue"
 TENSORF_QUEUE = "tensorf_queue"
+
+TOTAL_JOBS_PROCESSED = 0
 
 
 class QueueWorker:
@@ -75,11 +77,17 @@ class QueueWorker:
         properties: pika.BasicProperties,
         body: bytes,  # demoing as uuid for now
     ):
-        n = random.randint(0, 5)
+        global TOTAL_JOBS_PROCESSED
+        # n = random.randint(1, 2)
+        n = 1
         print(f" [x] Sleeping for {n} seconds as colmap process {body}")
         time.sleep(n)
+        TOTAL_JOBS_PROCESSED += 1
         print(f" [x] Done with colmap process {body}")
         ch.basic_ack(delivery_tag=method.delivery_tag)
+        if TOTAL_JOBS_PROCESSED == 10:
+            print(f" [x] Done with all jobs")
+            os._exit(0)
 
     def tensorf_callback(
         self,
@@ -88,11 +96,17 @@ class QueueWorker:
         properties: pika.BasicProperties,
         body: bytes,  # demoing as uuid for now
     ):
-        n = random.randint(0, 5)
-        print(f" [x] Sleeping for {n} seconds as colmap process {body}")
+        global TOTAL_JOBS_PROCESSED
+        # n = random.randint(1, 2)
+        n = 1
+        print(f" [x] Sleeping for {n} seconds as tensorf process {body}")
         time.sleep(n)
-        print(f" [x] Done with colmap process {body}")
+        TOTAL_JOBS_PROCESSED += 1
+        print(f" [x] Done with tensorf process {body}")
         ch.basic_ack(delivery_tag=method.delivery_tag)
+        if TOTAL_JOBS_PROCESSED == 10:
+            print(f" [x] Done with all jobs")
+            os._exit(0)
 
     @staticmethod
     def Serialize(data) -> bytes:
